@@ -15,9 +15,14 @@ script:
 
 # Definir o Deploy no Heroku
 deploy:
+  strategy: api
   provider: heroku
   api_key: $HEROKU_API_KEY
   edge: true 
   app: devopslab-alexvieira
   on:
       branch: main
+
+# Definições de OS
+os: linux
+dist: xenial
