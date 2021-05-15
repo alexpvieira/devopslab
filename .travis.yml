@@ -5,24 +5,54 @@ language: python
 python:
   - "3.7.9"
 
-# Instalação de Módulos que são necessários para a Aplicação.
-install:
-  - pip install flask
-
-# Defini o script de Teste que deve rodar toda vez que o código for alterado.
-script:
-  - python -m unittest -v test || travis_terminate 1
-
-# Definir o Deploy no Heroku
-deploy:
-  strategy: api
-  provider: heroku
-  api_key: $HEROKU_API_KEY
-  edge: true 
-  app: devopslab-alexvieira
-  on:
-      branch: main
-
-# Definições de OS
 os: linux
 dist: xenial
+
+before_install:
+- openssl aes-256-cbc -K $encrypted_8517ff808314_key -iv $encrypted_8517ff808314_iv
+  -in lab-devops-cloud-313114-30184d77876c.json.enc -out ../lab-devops-cloud-313114-30184d77876c.json
+  -d
+
+jobs:
+  include:
+    - stage: Build
+
+      name: "Testes Unitarios"
+      # Instalação de Módulos que são necessários para a Aplicação.
+      install:
+        - pip install flask flask-wtf coverage
+      script:  # Defini o script de Teste que deve rodar toda vez que o código for alterado.
+        - coverage run test.py || travis_terminate 1;
+        - coverage report app.py || travis_terminate 1;
+        - coverage xml app.py || travis_terminate 1;
+
+    - stage: STG Deploy
+      script: skip
+      # Definir o Deploy no Heroku
+      deploy:
+        provider: heroku
+        strategy: api
+        api_key: $HEROKU_API_KEY
+        edge: true
+        app: devopslab-alexvieira
+        on:
+          branch: main
+
+    - stage: STG TEST
+      script:
+        - curl https://devopslab-alexvieira.herokuapp.com/ | grep Hello || travis_terminate 1;
+
+    - stage: PROD Deploy
+      script: skip
+      # Definir o Deploy no Google Cloud
+      deploy:
+        provider: gae
+        keyfile: ../lab-devops-cloud-313114-30184d77876c.json
+        project: lab-devops-cloud-313114
+        on:
+          branch: main
+
+    - stage: PROD TEST
+      script:
+        - curl https://lab-devops-cloud-313114.uc.r.appspot.com/ | grep Hello || travis_terminate 1;
+
